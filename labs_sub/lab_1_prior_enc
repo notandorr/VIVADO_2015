@@ -1,5 +1,4 @@
-**4:2 Priority Encoder**
-
+4:2 Priority Encoder
 
 `timescale 1ns / 1ps 
 module priority_enc(
