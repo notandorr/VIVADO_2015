@@ -1,4 +1,4 @@
-**Code for adder-subtractor**
+Code for adder-subtractor
 `timescale 1ns / 1ps 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 module addsub(
@@ -15,7 +15,7 @@ endmodule
 
 
 
-**Code for full adder**
+Code for full adder
 `timescale 1ns / 1ps 
 module full_adder( 
 input A,
