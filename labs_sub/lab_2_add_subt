@@ -1,0 +1,29 @@
+**Code for adder-subtractor**
+`timescale 1ns / 1ps 
+/////////////////////////////////////////////////////////////////////////////////////////////////
+module addsub(
+input [3:0] A, 
+input [3:0] B, 
+input Csub, 
+output [3:0] Sum );
+wire c1,c2,c3,c4;
+full_adder f111(.A(A[0]), .B(B[0]^ Csub), .C(Csub), .Sum(Sum[0]), .Cout(c1)); 
+full_adder f211(.A(A[1]), .B(B[1]^Csub), .C(c1), .Sum(Sum[1]), .Cout(c2)); 
+full_adder f311(.A(A[2]), .B(B[2]^Csub), .C(c2), .Sum(Sum[2]), .Cout(c3)); 
+full_adder f411(.A(A[3]), .B(B[3]^Csub), .C(c3), .Sum(Sum[3]), .Cout(c4));
+endmodule
+
+
+
+**Code for full adder**
+`timescale 1ns / 1ps 
+module full_adder( 
+input A,
+input B,
+input C,
+output Sum,
+output Cout
+);
+assign Cout = A&B | B&C | A&C; 
+assign Sum = A^B^C; 
+endmodule
