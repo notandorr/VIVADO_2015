@@ -34,7 +34,7 @@ Read the sum value from fifo one by one using push button. Display the output on
 Design and code an FSM to detect an overlapping and non-overlapping sequence of '10101' as either mealy/moore.
 a. A switch should be taken as control input to detect overlapping/non-overlapping sequence.
 
-**LAB**
+**LAB GCD**
 
 • Write separate Verilog code for the control path.
 • Write separate Verilog code for datapath 
