@@ -1,0 +1,118 @@
+LAB 3
+
+TOP MODULE
+
+`timescale 1ns / 1ps
+ module topmod( input fclk,input reset, output reg[4:0] countf, input[1:0] swch); 
+wire [4:0] count,count1,count2,count3;
+wire clk19;
+fdiv #(19) f111(.inpclk(fclk),.clk_div(clk19)); 
+clock1 cl1(.clk(fclk), .clk1(clk1)); //1hz clock to generate other clock signals 
+fdiv #(1) f1(.inpclk(clk1),.clk_div(clk_div)); // select option 1 
+debounce d1(.clk_deb(clk19),.pb_press(reset), .deb_out(deb_out));
+counter c1(.clk(clk_div),.reset(deb_out),.count(count));  
+fdiv  #(2) f2(.inpclk(clk1),.clk_div(clk_div1)); //select option 2 frequency = f/2 
+debounce d2(.clk_deb(clk19), .pb_press(reset), .deb_out(deb_out)); 
+counter c2(.clk(clk_div1), .reset(deb_out), .count(count1)); 
+fdiv  #(4) f3(.inpclk(clk1),.clk_div(clk_div2)); //select option 4 freq = f/4 
+debounce d3(.clk_deb(clk19), .pb_press(reset), .deb_out(deb_out)); 
+counter c3(.clk(clk_div2), .reset(deb_out), .count(count2)); 
+fdiv  #(8) f4(.inpclk(clk1),.clk_div(clk_div3)); //select option 8 freq= f/8 
+debounce d4(.clk_deb(clk19), .pb_press(reset), .deb_out(deb_out)); 
+counter c4(.clk(clk_div3), .reset(deb_out), .count(count3)); 
+always @(*) //whenever input changes
+ begin  
+if ( swch == 2 'b00) //if option 1 is selected
+  begin  countf<=count; //showing count with freq f/1 
+  end else if (swch == 2 'b01) //if option 2 is selected
+   begin  countf<= count1; //showing count with freq f/2 
+   end  
+   else if (swch == 2 'b10) 
+begin countf<=count2; 
+end 
+    else if (swch == 2'b11)
+ begin countf<= count3;
+ end 
+else // if nothing is selected 
+countf<=count; //show count with freq f 
+end
+endmodule
+
+
+
+
+COUNTER
+
+
+`timescale 1ns / 1ps 
+module counter(     input clk,     output reg [4:0] count=0,     input reset     );  
+always @(posedge clk)// if || reset, then the circuit is asynchronous    
+ begin        
+ if (reset) count <=5'd0; // 5'd0 or 5'b0000      
+else 
+count<=count+1;        
+ end 
+endmodule
+
+
+1 HZ CLOCK
+`timescale 1ns / 1ps 
+module clock1(clk, clk1);          
+output reg clk1;         
+input clk;         //reg clko;         
+reg [27:0]count;                  
+initial  
+begin                 
+clk1 <= 1'b0;                 
+count <= 28'b0;             
+end                      
+always @(posedge clk)             
+begin                        
+if(count < 28'b0010111110101111000010000000)                                 
+count <= count + 1'b1;                                                      
+else if(count === 28'b0010111110101111000010000000)                               
+begin                                  
+clk1 <= ~clk1;                                  
+count <= 28'b0;                               
+end                    
+end     
+endmodule
+
+
+
+DEBOUNCE 
+
+`timescale 1ns / 1ps 
+module debounce(     input clk_deb,     input pb_press,     output deb_out     );     
+reg [2:0] ff;     
+always @(posedge clk_deb)    
+ begin     
+  ff[2]<=pb_press;    
+  ff[1]<=ff[2];     
+  ff[0]<=ff[1];    
+   end      
+   assign deb_out= ff[0]&ff[1]&ff[2];      
+   endmodule
+
+FREQUENCY DIVIDER
+
+`timescale 1ns / 1ps module fdiv(     output clk_div,    
+ input inpclk    
+  //input reset  
+     );    
+parameter width=20;     
+reg [width-1:0] count=0;     
+always @(posedge inpclk)     
+begin     //if (reset) count<=25'd0;         
+count<=count+1;     
+end    
+ assign clk_div=count[width-1]; 
+endmodule
+
+
+
+
+
+
+
+
