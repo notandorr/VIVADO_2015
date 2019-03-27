@@ -1,0 +1,175 @@
+TOP MODULE
+`timescale 1ns / 1ps
+module realtop( input fclk,input reset, output [7:0] cathode, output [3:0] anode, input[1:0] swch);
+wire clk_div, deb_out,clk1;
+wire [7:0] count;
+wire [3:0] ones,tens,hundreds,thousands;
+clk_1 c1(.clk(fclk),.clk1(clk1));
+bintoBCD b1(.number(count),.ones(ones),.hundreds(hundreds),.tens(tens),.thousands(thousands)); sevenseg_all s1(.clk(fclk),.clr(deb_out),.num(count),.cathode(cathode),.anode(anode),.ones(ones),.thousands (thousands),.tens(tens),.hundreds(hundreds));
+debounce d2(.clk_deb(clk_div), .pb_press(reset), .deb_out(deb_out)); top_module c32(.clk(clk1), .reset(deb_out), .count(count), .switch(swch));
+endmodule
+COUNTER `timescale 1ns / 1ps module top_module(
+input clk,
+input [1:0]switch,
+output reg [7:0] count=0,
+input reset
+);
+always @(posedge clk)// if || reset, then the circuit is asynchronous begin
+if (reset ) begin count <=7'd0; // 5'd0 or 5'b0000 end
+else
+begin
+if (switch == 2'b00) begin count<=count+1;
+end
+else if (switch == 2'b10)
+begin count<=count-1; end
+else if (switch == 2'b01) begin
+count<=count;
+  end 
+  else
+begin 
+count<=count+1; 
+end
+end
+end 
+endmodule
+
+
+
+FREQUENCY DIVIDER
+`timescale 1ns / 1ps module fdiv(
+output clk_div, input inpclk //input reset
+);
+parameter width=25;
+reg [width-1:0] count=0; always @(posedge inpclk) begin
+//if (reset) count<=25'd0;
+count<=count+1; end
+assign clk_div=count[24]; endmodule
+
+
+
+
+1HZ CLOCK `timescale 1ns / 1ps module clk_1(clk, clk1);
+output clk1; input clk;
+reg clk1;
+reg [27:0]count;
+initial begin
+clk1 <= 1'b0; count <= 28'b0;
+end
+always @(posedge clk) begin
+if(count < 28'b0010111110101111000010000000) count <= count + 1'b1; //COUNT TILL 50MHZ
+else if(count === 28'b0010111110101111000010000000) //WHEN COUNT REACHES 50HZ
+begin
+clk1 <= ~clk1; //FLIP THE VALUE OF CLK1 count <= 28'b0;
+end end
+endmodule
+
+
+
+
+BIN TO BCD
+`timescale 1ns / 1ps
+module bintoBCD(number, thousands, hundreds, tens, ones);
+// I/O Signal Definitions input [7:0] number;
+output reg [3:0] thousands; output reg [3:0] hundreds; output reg [3:0] tens; output reg [3:0] ones;
+// Internal variable for storing bits reg [19:0] shift;//n=(n*ceil(n/3)) integer i;
+always @(number) begin
+// Clear previous number and store new number in shift register shift[19:8] = 0;
+shift[7:0] = number;
+// Loop eight times
+for (i=0; i<8; i=i+1) begin
+if (shift[11:8] >= 5)//ones shift[11:8] = shift[11:8] + 3;
+if (shift[15:12] >= 5)//tens shift[15:12] = shift[15:12] + 3;
+if (shift[19:16] >= 5)//hundreds shift[19:16] = shift[19:16] + 3;
+ 
+ // Shift entire register left once
+shift = shift << 1;//left shift by one end
+// Push decimal numbers to output hundreds = shift[19:16];
+tens = shift[15:12];
+ones = shift[11:8];
+thousands= 4'b0000; end
+endmodule
+
+
+
+
+
+
+SEVEN SEGMENT
+`timescale 1ns / 1ps module sevenseg_all(
+input clk,
+input clr, // clear pin used to reset the LED display input [3:0] ones,
+input [3:0] tens,
+input [3:0] hundreds,
+input [3:0] thousands,
+input [3:0] num,
+output [7:0] cathode,
+output [3:0] anode
+);
+reg [6:0]sseg_temp;
+reg [3:0]an_temp = 4'b1110 ;
+reg [17:0] count; //the 18 bit counter which allows us to multiplex at 1000Hz
+always @ (posedge clk) begin
+count <= count + 1; end
+//code for display multiple digits (do not initialize an_temp in line 41 and comment out lines 44 to 60)
+always @ (*) begin
+case(count[17:16]) //using only the 2 MSB's of the counter
+2'b00 : //When the 2 MSB's are 00 enable the fourth display begin
+case(ones)
+ 
+ 4'd0 : sseg_temp = 7'b0000001; //to display 0 4'd1 : sseg_temp = 7'b1001111; //to display 1 4'd2 : sseg_temp = 7'b0010010; //to display 2 4'd3 : sseg_temp = 7'b0000110; //to display 3 4'd4 : sseg_temp = 7'b1001100; //to display 4 4'd5 : sseg_temp = 7'b0100100; //to display 5 4'd6 : sseg_temp = 7'b0100000; //to display 6 4'd7 : sseg_temp = 7'b0001111; //to display 7 4'd8 : sseg_temp = 7'b0000000; //to display 8 4'd9 : sseg_temp = 7'b0000100; //to display 9 default : sseg_temp = 7'b1111110; //dash
+endcase
+//sseg = ones;
+an_temp = 4'b1110; end
+2'b01: //When the 2 MSB's are 01 enable the third display begin
+case(tens)
+4'd0 : sseg_temp = 7'b0000001; //to display 0 4'd1 : sseg_temp = 7'b1001111; //to display 1 4'd2 : sseg_temp = 7'b0010010; //to display 2 4'd3 : sseg_temp = 7'b0000110; //to display 3 4'd4 : sseg_temp = 7'b1001100; //to display 4 4'd5 : sseg_temp = 7'b0100100; //to display 5 4'd6 : sseg_temp = 7'b0100000; //to display 6 4'd7 : sseg_temp = 7'b0001111; //to display 7 4'd8 : sseg_temp = 7'b0000000; //to display 8 4'd9 : sseg_temp = 7'b0000100; //to display 9 default : sseg_temp = 7'b1111110; //dash
+endcase
+//sseg = tens;
+an_temp = 4'b1101; end
+2'b10: //When the 2 MSB's are 10 enable the second display begin
+case(hundreds)
+4'd0 : sseg_temp = 7'b0000001; //to display 0 4'd1 : sseg_temp = 7'b1001111; //to display 1 4'd2 : sseg_temp = 7'b0010010; //to display 2 4'd3 : sseg_temp = 7'b0000110; //to display 3 4'd4 : sseg_temp = 7'b1001100; //to display 4 4'd5 : sseg_temp = 7'b0100100; //to display 5 4'd6 : sseg_temp = 7'b0100000; //to display 6
+
+ 4'd7 : sseg_temp = 7'b0001111; //to display 7 4'd8 : sseg_temp = 7'b0000000; //to display 8 4'd9 : sseg_temp = 7'b0000100; //to display 9 default : sseg_temp = 7'b1111110; //dash
+endcase
+//sseg = hundreds;
+an_temp = 4'b1011; end
+2'b11: //When the 2 MSB's are 11 enable the first display begin
+case(thousands)
+4'd0 : sseg_temp = 7'b0000001; //to display 0 4'd1 : sseg_temp = 7'b1001111; //to display 1 4'd2 : sseg_temp = 7'b0010010; //to display 2 4'd3 : sseg_temp = 7'b0000110; //to display 3 4'd4 : sseg_temp = 7'b1001100; //to display 4 4'd5 : sseg_temp = 7'b0100100; //to display 5 4'd6 : sseg_temp = 7'b0100000; //to display 6 4'd7 : sseg_temp = 7'b0001111; //to display 7 4'd8 : sseg_temp = 7'b0000000; //to display 8 4'd9 : sseg_temp = 7'b0000100; //to display 9 default : sseg_temp = 7'b1111110; //dash
+endcase
+//sseg = thousands;
+an_temp = 4'b0111; end
+endcase end
+assign anode = an_temp;
+assign cathode = {sseg_temp, 1'b1}; endmodule
+CONSTRAINTS
+set_property PACKAGE_PIN W5 [get_ports fclk]
+set_property IOSTANDARD LVCMOS33 [get_ports fclk]
+## Switches
+set_property PACKAGE_PIN V17 [get_ports {swch[0]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {swch[0]}] set_property PACKAGE_PIN V16 [get_ports {swch[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {swch[1]}]
+
+##7 segment display
+set_property PACKAGE_PIN W7 [get_ports {cathode[7]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {cathode[7]}] set_property PACKAGE_PIN W6 [get_ports {cathode[6]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {cathode[6]}] set_property PACKAGE_PIN U8 [get_ports {cathode[5]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {cathode[5]}] set_property PACKAGE_PIN V8 [get_ports {cathode[4]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {cathode[4]}] set_property PACKAGE_PIN U5 [get_ports {cathode[3]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {cathode[3]}] set_property PACKAGE_PIN V5 [get_ports {cathode[2]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {cathode[2]}] set_property PACKAGE_PIN U7 [get_ports {cathode[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {cathode[1]}]
+set_property PACKAGE_PIN V7 [get_ports {cathode[0]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {cathode[0]}]
+set_property PACKAGE_PIN U2 [get_ports {anode[0]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {anode[0]}]
+set_property PACKAGE_PIN U4 [get_ports {anode[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {anode[1]}]
+set_property PACKAGE_PIN V4 [get_ports {anode[2]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {anode[2]}]
+set_property PACKAGE_PIN W4 [get_ports {anode[3]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {anode[3]}]
+##Buttons
+set_property PACKAGE_PIN U18 [get_ports reset]
+set_property IOSTANDARD LVCMOS33 [get_ports reset]
